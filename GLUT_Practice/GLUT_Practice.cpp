@@ -4,6 +4,7 @@
 #define MAXPOINTS 100      /* 記憶する点の数　　 */
 GLint point[MAXPOINTS][2]; /* 座標を記憶する配列 */
 int pointnum = 0;          /* 記憶した座標の数　 */
+int rubberband = 0;        /* ラバーバンドの消去 */
 
 void display(void)
 {
@@ -53,6 +54,9 @@ void mouse(int button, int state, int x, int y)
 			glVertex2iv(point[pointnum]);     /* 今の位置は離した位置 */
 			glEnd();
 			glFlush();
+
+			/* 始点ではラバーバンドを描いていないので消さない */
+			rubberband = 0;
 		}
 		else {
 			/* 削除 */
@@ -66,6 +70,39 @@ void mouse(int button, int state, int x, int y)
 	default:
 		break;
 	}
+}
+
+void motion(int x, int y)
+{
+	static GLint savepoint[2]; /* 以前のラバーバンドの端点 */
+
+	/* 論理演算機能 ON */
+	glEnable(GL_COLOR_LOGIC_OP);
+	glLogicOp(GL_INVERT);
+
+	glBegin(GL_LINES);
+	if (rubberband) {
+		/* 以前のラバーバンドを消す */
+		glVertex2iv(point[pointnum - 1]);
+		glVertex2iv(savepoint);
+	}
+	/* 新しいラバーバンドを描く */
+	glVertex2iv(point[pointnum - 1]);
+	glVertex2i(x, y);
+	glEnd();
+
+	glFlush();
+
+	/* 論理演算機能 OFF */
+	glLogicOp(GL_COPY);
+	glDisable(GL_COLOR_LOGIC_OP);
+
+	/* 今描いたラバーバンドの端点を保存 */
+	savepoint[0] = x;
+	savepoint[1] = y;
+
+	/* 今描いたラバーバンドは次のタイミングで消す */
+	rubberband = 1;
 }
 
 void init(void)
@@ -83,6 +120,7 @@ int main(int argc, char* argv[])
 	glutDisplayFunc(display);
 	glutReshapeFunc(resize);
 	glutMouseFunc(mouse);
+	glutMotionFunc(motion);
 	init();
 	glutMainLoop();
 	return 0;
