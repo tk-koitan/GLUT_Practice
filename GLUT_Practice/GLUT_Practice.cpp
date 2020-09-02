@@ -188,6 +188,10 @@ void mouse(int x, int y)
 
 void mouse_down(int x, int y)
 {
+    prev_pos_x = current_pos_x;
+    prev_pos_y = current_pos_y;
+    current_pos_x = x;
+    current_pos_y = y;
     int ww = glutGet(GLUT_WINDOW_WIDTH);
     int wh = glutGet(GLUT_WINDOW_HEIGHT);
     glutWarpPointer(ww / 2, wh / 2);
