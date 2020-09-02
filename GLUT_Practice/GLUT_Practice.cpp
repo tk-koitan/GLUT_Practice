@@ -94,7 +94,7 @@ void display(void)
     /* シーンの描画 */
     scene();
     
-    glFlush();
+    glutSwapBuffers();
 }
 
 void resize(int w, int h)
@@ -182,7 +182,7 @@ void init(void)
 int main(int argc, char *argv[])
 {
     glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_RGBA | GLUT_DEPTH);
+    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
     glutCreateWindow(argv[0]);
     glutDisplayFunc(display);
     glutReshapeFunc(resize);
