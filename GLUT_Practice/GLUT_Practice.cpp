@@ -1,178 +1,194 @@
 #include <stdlib.h>
 #include <GLUT/GLUT.h>
 
-GLdouble vertex[][3] = {
-    { 0.0, 0.0, 0.0 },
-    { 1.0, 0.0, 0.0 },
-    { 1.0, 1.0, 0.0 },
-    { 0.0, 1.0, 0.0 },
-    { 0.0, 0.0, 1.0 },
-    { 1.0, 0.0, 1.0 },
-    { 1.0, 1.0, 1.0 },
-    { 0.0, 1.0, 1.0 }
-};
+double input_x = 0;
+double input_y = 0;
+int key_state[256];
 
-int face[][4] = {
-    { 0, 1, 2, 3 },
-    { 1, 5, 6, 2 },
-    { 5, 4, 7, 6 },
-    { 4, 0, 3, 7 },
-    { 4, 5, 1, 0 },
-    { 3, 2, 6, 7 }
-};
-
-GLdouble normal[][3] = {
-    { 0.0, 0.0,-1.0 },
-    { 1.0, 0.0, 0.0 },
-    { 0.0, 0.0, 1.0 },
-    {-1.0, 0.0, 0.0 },
-    { 0.0,-1.0, 0.0 },
-    { 0.0, 1.0, 0.0 }
-};
-
-GLfloat light0pos[] = { 0.0, 3.0, 5.0, 1.0 };
-GLfloat light1pos[] = { 5.0, 3.0, 0.0, 1.0 };
-
-GLfloat green[] = { 0.0, 1.0, 0.0, 1.0 };
-GLfloat red[] = { 0.8, 0.2, 0.2, 1.0 };
-GLfloat blue[] = { 0.2, 0.2, 0.8, 1.0 };
-
-void cube(void)
+int key(char k)
 {
-    int i;
-    int j;
+    return key_state[k - 'a'];
+}
+
+void scene(void)
+{
+    /* 物体の色 */
+    static GLfloat red[] = { 0.8, 0.2, 0.2, 1.0 };
+    static GLfloat green[] = { 0.2, 0.8, 0.2, 1.0 };
+    static GLfloat blue[] = { 0.2, 0.2, 0.8, 1.0 };
+    static GLfloat yellow[] = { 0.8, 0.8, 0.2, 1.0 };
+    static GLfloat ground[][4] = {
+        { 0.6, 0.6, 0.6, 1.0 },
+        { 0.3, 0.3, 0.3, 1.0 }
+    };
     
+    int i, j;
+    
+    /* 赤い箱 */
+    glPushMatrix();
+    glTranslated(0.0, 0.0, -3.0);
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, red);
+    glutSolidCube(1.0);
+    glPopMatrix();
+    
+    /* 緑の箱 */
+    glPushMatrix();
+    glTranslated(0.0, 0.0, 3.0);
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, green);
+    glutSolidCube(1.0);
+    glPopMatrix();
+    
+    /* 青い箱 */
+    glPushMatrix();
+    glTranslated(-3.0, 0.0, 0.0);
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, blue);
+    glutSolidCube(1.0);
+    glPopMatrix();
+    
+    /* 黄色い箱 */
+    glPushMatrix();
+    glTranslated(3.0, 0.0, 0.0);
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, yellow);
+    glutSolidCube(1.0);
+    glPopMatrix();
+    
+    /* 地面 */
     glBegin(GL_QUADS);
-    for (j = 0; j < 6; ++j) {
-        glNormal3dv(normal[j]);
-        for (i = 0; i < 4; ++i) {
-            glVertex3dv(vertex[face[j][i]]);
+    glNormal3d(0.0, 1.0, 0.0);
+    for (j = -5; j < 5; ++j) {
+        for (i = -5; i < 5; ++i) {
+            glMaterialfv(GL_FRONT, GL_DIFFUSE, ground[(i + j) & 1]);
+            glVertex3d((GLdouble)i, -0.5, (GLdouble)j);
+            glVertex3d((GLdouble)i, -0.5, (GLdouble)(j + 1));
+            glVertex3d((GLdouble)(i + 1), -0.5, (GLdouble)(j + 1));
+            glVertex3d((GLdouble)(i + 1), -0.5, (GLdouble)j);
         }
     }
     glEnd();
 }
 
-void idle(void)
-{
-    glutPostRedisplay();
-}
-
 void display(void)
 {
-    static int r = 0; /* 回転角 */
+    static GLfloat lightpos[] = { 3.0, 4.0, 5.0, 1.0 }; /* 光源の位置 */
     
+    static double ex = 0.0, ez = 0.0; /* 視点の位置 */
+    static double r = 0.0;            /* 視点の向き */
+    
+    //座標移動
+    ex -= input_x * 0.1;
+    ez += input_y * 0.1;
+    
+    /* 画面クリア */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
-    /* 光源の位置設定 */
-    glLightfv(GL_LIGHT0, GL_POSITION, light0pos);
-    glLightfv(GL_LIGHT1, GL_POSITION, light1pos);
+    /* モデルビュー変換行列の初期化 */
+    glLoadIdentity();
     
-    /* モデルビュー変換行列の保存 */
-    glPushMatrix();
+    /* 視点の移動 */
+    glRotated(r, 0.0, 1.0, 0.0);
+    glTranslated(ex, 0.0, ez);
     
-    /* 図形の回転 */
-    glRotated((double)r, 0.0, 1.0, 0.0);
+    /* 光源の位置を設定 */
+    glLightfv(GL_LIGHT0, GL_POSITION, lightpos);
     
-    /* 図形の色 (赤)  */
-    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, red);
+    /* シーンの描画 */
+    scene();
     
-    /* 図形の描画 */
-    cube();
-    
-    /* 二つ目の図形の描画 */
-    glPushMatrix();
-    glTranslated(1.0, 1.0, 1.0);
-    glRotated((double)(2 * r), 0.0, 1.0, 0.0);
-    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, blue);
-    cube();
-    glPopMatrix();
-    
-    /* モデルビュー変換行列の復帰 */
-    glPopMatrix();
-    
-    glutSwapBuffers();
-    
-    /* 一周回ったら回転角を 0 に戻す */
-    if (++r >= 360) r = 0;
+    glFlush();
 }
 
 void resize(int w, int h)
 {
+    /* ウィンドウ全体をビューポートにする */
     glViewport(0, 0, w, h);
     
-    /* 透視変換行列の設定 */
+    /* 透視変換行列の指定 */
     glMatrixMode(GL_PROJECTION);
+    
+    /* 透視変換行列の初期化 */
     glLoadIdentity();
     gluPerspective(30.0, (double)w / (double)h, 1.0, 100.0);
     
-    /* モデルビュー変換行列の設定 */
+    /* モデルビュー変換行列の指定 */
     glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    gluLookAt(3.0, 4.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
 }
 
-void mouse(int button, int state, int x, int y)
+void keyboard_down(unsigned char key, int x, int y)
 {
-    switch (button) {
-        case GLUT_LEFT_BUTTON:
-            if (state == GLUT_DOWN) {
-                /* アニメーション開始 */
-                glutIdleFunc(idle);
-            }
-            else {
-                /* アニメーション停止 */
-                glutIdleFunc(0);
-            }
-            break;
-        case GLUT_RIGHT_BUTTON:
-            if (state == GLUT_DOWN) {
-                /* コマ送り (1ステップだけ進める) */
-                glutPostRedisplay();
-            }
-            break;
-        default:
-            break;
+    /* ESC か q をタイプしたら終了 */
+    if (key == '\033' || key == 'q') {
+        exit(0);
+    }
+    
+    if(key == 'a')
+    {
+        input_x = -1;
+    }
+    else if(key == 'd')
+    {
+        input_x = 1;
+    }
+    else
+    {
+        input_x = 0;
+    }
+    
+    if(key == 's')
+    {
+        input_y = -1;
+    }
+    else if(key == 'w')
+    {
+        input_y = 1;
+    }
+    else
+    {
+        input_y = 0;
     }
 }
 
-void keyboard(unsigned char key, int x, int y)
+void keyboard_up(unsigned char key, int x, int y)
 {
-    switch (key) {
-        case 'q':
-        case 'Q':
-        case '\033':  /* '\033' は ESC の ASCII コード */
-            exit(0);
-        default:
-            break;
+    if(key == 'a')
+    {
+        input_x = 0;
+    }
+    else if(key == 'd')
+    {
+        input_x = 0;
+    }
+
+    
+    if(key == 's')
+    {
+        input_y = 0;
+    }
+    else if(key == 'w')
+    {
+        input_y = 0;
     }
 }
-
 
 void init(void)
 {
-    glClearColor(1.0, 1.0, 1.0, 1.0);
-    
+    /* 初期設定 */
+    glClearColor(1.0, 1.0, 1.0, 0.0);
     glEnable(GL_DEPTH_TEST);
-    
     glEnable(GL_CULL_FACE);
-    glCullFace(GL_FRONT);
-    
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
-    glEnable(GL_LIGHT1);
-    glLightfv(GL_LIGHT1, GL_DIFFUSE, green);
-    glLightfv(GL_LIGHT1, GL_SPECULAR, green);
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH);
+    glutInitDisplayMode(GLUT_RGBA | GLUT_DEPTH);
     glutCreateWindow(argv[0]);
     glutDisplayFunc(display);
     glutReshapeFunc(resize);
-    glutMouseFunc(mouse);
-    glutKeyboardFunc(keyboard);
+    glutKeyboardFunc(keyboard_down);
+    glutKeyboardUpFunc(keyboard_up);
+    glutIdleFunc(display);
     init();
     glutMainLoop();
     return 0;
