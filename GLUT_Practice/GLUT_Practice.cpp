@@ -85,6 +85,10 @@ void display(void)
     ex += (-input_x * cos(deg2rad(rx)) - input_y * sin(deg2rad(rx))) * 0.1;
     ez += (-input_x * sin(deg2rad(rx)) + input_y * cos(deg2rad(rx))) * 0.1;
     
+    //マウス座標更新
+    prev_pos_x = current_pos_x;
+    prev_pos_y = current_pos_y;
+    
     
     /* 画面クリア */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -180,16 +184,12 @@ void keyboard_up(unsigned char key, int x, int y)
 
 void mouse(int x, int y)
 {
-    prev_pos_x = current_pos_x;
-    prev_pos_y = current_pos_y;
     current_pos_x = x;
     current_pos_y = y;
 }
 
 void mouse_down(int x, int y)
 {
-    prev_pos_x = current_pos_x;
-    prev_pos_y = current_pos_y;
     current_pos_x = x;
     current_pos_y = y;
     int ww = glutGet(GLUT_WINDOW_WIDTH);
